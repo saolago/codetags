@@ -2,6 +2,7 @@ package codetags
 
 import "fmt"
 import "testing"
+import "reflect"
 
 func Test_illegal_NewInstance_name(t *testing.T) {
   t.Skip()
@@ -68,7 +69,39 @@ func Test_Initialize(t *testing.T) {
       t.Errorf("testcase[%d] - different fields: %v", i, diffFields)
     }
     if conlog {
-      fmt.Printf("Output: %v", diffFields)
+      fmt.Printf("+> Output: %v \n", diffFields)
+    }
+  }
+}
+
+func Test_Register(t *testing.T) {
+  var table_Register_Cases = []struct {
+    presets *Presets
+    descriptors []interface{}
+    declaredTags []string
+  }{
+    {
+      presets: &Presets{ "version": "0.1.2" },
+      descriptors: []interface{} {
+        "tag-1",
+        TagDescriptor{ Name: "tag-2", Enabled: false, Plan: TagPlan{ Enabled: false } },
+        TagDescriptor{ Name: "tag-3" },
+      },
+      declaredTags: []string { "tag-1", "tag-3" },
+    },
+  }
+  for i, c := range table_Register_Cases {
+    ct, _ := NewInstance("test", c.presets)
+    ct_ref := ct.Register(c.descriptors)
+    if ct_ref != ct {
+      t.Errorf("testcase[%d] - output Ref is different with source Ref", i)
+    }
+    actual := ct.GetDeclaredTags()
+    if !reflect.DeepEqual(actual, c.declaredTags) {
+      t.Errorf("testcase[%d] - declaredTags[%v] is different with expected [%v]", i, actual, c.declaredTags)
+    }
+    if conlog {
+      fmt.Printf("+> Input data: %v \n", c)
     }
   }
 }
