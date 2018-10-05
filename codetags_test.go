@@ -37,31 +37,31 @@ func Test_labelify(t *testing.T) {
 
 func Test_Initialize(t *testing.T) {
   var table_Initialize_Cases = []struct {
-    current Presets
-    data Presets
-    expected Presets
+    current *Presets
+    data *Presets
+    expected *Presets
   }{
     {
-      current: Presets { "namespace": "ABC" },
-      data: Presets { "namespace": "xyz", "version": "0.1.2" },
-      expected: Presets {"namespace": "XYZ", "version": "0.1.2"},
+      current: &Presets { "namespace": "ABC" },
+      data: &Presets { "namespace": "xyz", "version": "0.1.2" },
+      expected: &Presets {"namespace": "XYZ", "version": "0.1.2"},
     },
   }
   for i, c := range table_Initialize_Cases {
-    ct, _ := NewInstance("test", &c.current)
-    ct_ref := ct.Initialize(&c.data)
+    ct, _ := NewInstance("test", c.current)
+    ct_ref := ct.Initialize(c.data)
     if ct_ref != ct {
       t.Errorf("testcase[%d] - output Ref is different with source Ref", i)
     }
     actual := ct_ref.presets
     diffFields := []string {}
     for _, f := range fieldOf_Initialize_opts_group1 {
-      if actual[f] != c.expected[f] {
+      if actual[f] != (*c.expected)[f] {
         diffFields = append(diffFields, f)
       }
     }
     for _, f := range fieldOf_Initialize_opts_group2 {
-      if actual[f] != c.expected[f] {
+      if actual[f] != (*c.expected)[f] {
         diffFields = append(diffFields, f)
       }
     }
@@ -84,8 +84,14 @@ func Test_Register(t *testing.T) {
       presets: &Presets{ "version": "0.1.2" },
       descriptors: []interface{} {
         "tag-1",
-        TagDescriptor{ Name: "tag-2", Enabled: false, Plan: TagPlan{ Enabled: false } },
-        TagDescriptor{ Name: "tag-3" },
+        TagDescriptor{
+          Name: "tag-2",
+          Enabled: false,
+          Plan: TagPlan{ Enabled: false },
+        },
+        TagDescriptor{
+          Name: "tag-3",
+        },
       },
       declaredTags: []string { "tag-1", "tag-3" },
     },
@@ -98,7 +104,7 @@ func Test_Register(t *testing.T) {
     }
     actual := ct.GetDeclaredTags()
     if !reflect.DeepEqual(actual, c.declaredTags) {
-      t.Errorf("testcase[%d] - declaredTags[%v] is different with expected [%v]", i, actual, c.declaredTags)
+      t.Errorf("testcase[%d] - actual[%v] is different with expected [%v]", i, actual, c.declaredTags)
     }
     if conlog {
       fmt.Printf("+> Input data: %v \n", c)

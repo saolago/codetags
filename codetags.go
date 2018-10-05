@@ -124,7 +124,15 @@ func (c *codetags) Register(descriptors []interface{}) *codetags {
 }
 
 func (c *codetags) GetDeclaredTags() []string {
-  return c.store.declaredTags
+  return list_clone(c.store.declaredTags)
+}
+
+func (c *codetags) GetExcludedTags() []string {
+  return list_clone(c.store.excludedTags)
+}
+
+func (c *codetags) GetIncludedTags() []string {
+  return list_clone(c.store.includedTags)
 }
 
 var instances map[string]codetags = make(map[string]codetags)
@@ -180,4 +188,10 @@ func list_map(vs []interface{}, f func(interface{}) string) []string {
       vsm[i] = f(v)
   }
   return vsm
+}
+
+func list_clone(ss []string) []string {
+  ts := make([]string, len(ss))
+  copy(ts, ss)
+  return ts
 }
