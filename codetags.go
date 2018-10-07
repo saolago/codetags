@@ -2,6 +2,7 @@ package codetags
 
 import (
   "fmt"
+  "os"
   "strings"
   "reflect"
   "regexp"
@@ -27,7 +28,7 @@ type Presets = map[string]string
 
 type codetags struct {
 	store struct {
-    env []string
+    env map[string][]string
     declaredTags []string
     includedTags []string
     excludedTags []string
@@ -43,17 +44,19 @@ var fieldOf_Initialize_opts_group2 = []string {
 }
 
 func (c *codetags) Initialize(opts *Presets) *codetags {
-  for _, key := range fieldOf_Initialize_opts_group1 {
-    if val, ok := (*opts)[key]; ok {
-      c.presets[key] = val
+  if opts != nil {
+    for _, key := range fieldOf_Initialize_opts_group1 {
+      if val, ok := (*opts)[key]; ok {
+        c.presets[key] = val
+      }
+    }
+    for _, key := range fieldOf_Initialize_opts_group2 {
+      if val, ok := (*opts)[key]; ok {
+        c.presets[key] = labelify(val)
+      }
     }
   }
-  for _, key := range fieldOf_Initialize_opts_group2 {
-    if val, ok := (*opts)[key]; ok {
-      c.presets[key] = labelify(val)
-    }
-  }
-  return c
+  return c.refreshEnv()
 }
 
 var name_TagDescriptor string = typeof(TagDescriptor{})
@@ -135,16 +138,74 @@ func (c *codetags) GetIncludedTags() []string {
   return list_clone(c.store.includedTags)
 }
 
+func (c *codetags) ClearCache() *codetags {
+  for k := range c.store.cachedTags {
+    delete(c.store.cachedTags, k)
+  }
+  return c.refreshEnv()
+}
+
+func (c *codetags) refreshEnv() *codetags {
+  for k := range c.store.env {
+    delete(c.store.env, k)
+  }
+  c.store.excludedTags = c.getEnv(c.getLabel("excludedTags"))
+  c.store.includedTags = c.getEnv(c.getLabel("includedTags"))
+  return c
+}
+
+func (c *codetags) getEnv(label string) []string {
+  if tags, ok := c.store.env[label]; ok {
+    return tags
+  }
+  c.store.env[label] = stringToList(os.Getenv(label))
+  return c.store.env[label]
+}
+
+func (c *codetags) getLabel(tagType string) string {
+  label := ""
+  if namespace, ok := c.presets["namespace"]; ok && len(namespace) > 0 {
+    label = namespace + "_"
+  } else {
+    label = DEFAULT_NAMESPACE + "_"
+  }
+  switch (tagType) {
+  case "excludedTags":
+    if tagLabel, ok := c.presets["excludedTagsLabel"]; ok && len(tagLabel) > 0 {
+      label = label + tagLabel
+    } else {
+      label = label + "EXCLUDED_TAGS"
+    }
+  case "includedTags":
+    if tagLabel, ok := c.presets["includedTagsLabel"]; ok && len(tagLabel) > 0 {
+      label = label + tagLabel
+    } else {
+      label = label + "INCLUDED_TAGS"
+    }
+  default:
+    if tagLabel, ok := c.presets[tagType]; ok && len(tagLabel) > 0 {
+      label = label + tagLabel
+    } else {
+      label = label + labelify(tagType)
+    }
+  }
+  return label
+}
+
 var instances map[string]codetags = make(map[string]codetags)
 
 func NewInstance(name string, opts ...*Presets) (*codetags, error) {
   c := &codetags {}
+  c.store.env = make(map[string][]string, 0)
   c.store.declaredTags = make([]string, 0)
   c.store.excludedTags = make([]string, 0)
   c.store.includedTags = make([]string, 0)
+  c.store.cachedTags = make(map[string]bool, 0)
   c.presets = make(Presets)
   if len(opts) > 0 {
     c.Initialize(opts[0])
+  } else {
+    c.Initialize(nil)
   }
   return c, nil
 }
@@ -191,7 +252,22 @@ func list_map(vs []interface{}, f func(interface{}) string) []string {
 }
 
 func list_clone(ss []string) []string {
+  if ss == nil {
+    return make([]string, 0)
+  }
   ts := make([]string, len(ss))
   copy(ts, ss)
   return ts
+}
+
+func stringToList(label string) []string {
+  tags := make([]string, 0)
+  strs := strings.Split(label, ",")
+  for _, str := range strs {
+    s := strings.Trim(str, ` `)
+    if len(s) > 0 {
+      tags = append(tags, s)
+    }
+  }
+  return tags
 }
