@@ -1,8 +1,10 @@
 package codetags
 
 import "fmt"
+import "os"
 import "testing"
 import "reflect"
+import "github.com/stretchr/testify/assert"
 
 func Test_illegal_NewInstance_name(t *testing.T) {
   t.Skip()
@@ -110,4 +112,83 @@ func Test_Register(t *testing.T) {
       fmt.Printf("+> Input data: %v \n", c)
     }
   }
+}
+
+func Test_evaluateExpression(t *testing.T) {
+  os.Setenv("ISACTIVE_INCLUDED_TAGS", "abc, def, xyz, tag-4")
+  os.Setenv("ISACTIVE_EXCLUDED_TAGS", "disabled, tag-2")
+
+  isacti, _ := NewInstance("isacti", &Presets{
+    "namespace": "IsActive",
+  })
+
+  isacti.Register([]interface{} {"tag-1", "tag-2"})
+
+  assert.True(t, isacti.evaluateExpression("abc"))
+  assert.True(t, isacti.evaluateExpression("xyz"))
+  assert.True(t, isacti.evaluateExpression([]string {"abc", "xyz"}))
+  assert.True(t, isacti.evaluateExpression([]interface{} {"abc", "xyz"}))
+  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
+    "$all": []interface{} { "abc", "xyz" },
+    "$not": "not-found",
+    "$any": map[string]interface{} {
+      "$not": "tag-1",
+      "$all": []interface{} {
+        "tag-2", "tag-4",
+      },
+    },
+  }))
+  assert.False(t, isacti.evaluateExpression(nil))
+  assert.False(t, isacti.evaluateExpression("nil"))
+}
+
+func Test_IsActive(t *testing.T) {
+  os.Setenv("ISACTIVE_INCLUDED_TAGS", "abc, def, xyz, tag-4")
+  os.Setenv("ISACTIVE_EXCLUDED_TAGS", "disabled, tag-2")
+
+  isacti, _ := NewInstance("isacti", &Presets{
+    "namespace": "IsActive",
+  })
+
+  isacti.Register([]interface{} {"tag-1", "tag-2"})
+
+  includedExpected := []string{"abc", "def", "xyz", "tag-4"}
+  if !reflect.DeepEqual(isacti.GetIncludedTags(), includedExpected) {
+    t.Errorf("includedTags [%v] is different with expected [%v]", isacti.GetIncludedTags(), includedExpected)
+  }
+
+  excludedExpected := []string{"disabled", "tag-2"}
+  if !reflect.DeepEqual(isacti.GetExcludedTags(), excludedExpected) {
+    t.Errorf("excludedTags [%v] is different with expected [%v]", isacti.GetExcludedTags(), excludedExpected)
+  }
+  // An arguments-list presents the OR conditional operator
+  assert.True(t, isacti.IsActive("abc"))
+  assert.True(t, isacti.IsActive("xyz"))
+  assert.True(t, isacti.IsActive("abc", "disabled"))
+  assert.True(t, isacti.IsActive("disabled", "abc"))
+  assert.True(t, isacti.IsActive("abc", "nil"))
+  assert.True(t, isacti.IsActive("undefined", "abc", "nil"))
+  assert.False(t, isacti.IsActive())
+  assert.False(t, isacti.IsActive(nil))
+  assert.False(t, isacti.IsActive("disabled"))
+  assert.False(t, isacti.IsActive("nil"))
+  assert.False(t, isacti.IsActive("disabled", "nil"))
+  // An array argument presents the AND conditional operator
+  assert.True(t, isacti.IsActive([]interface{} { "abc", "xyz" }))
+  assert.True(t, isacti.IsActive([]interface{} { "abc", "xyz" }, nil))
+  assert.False(t, isacti.IsActive([]interface{} { "abc", "nil" }))
+  assert.False(t, isacti.IsActive([]interface{} { "abc", "def", "nil" }))
+  assert.False(t, isacti.IsActive([]interface{} { "abc", "def", "disabled" }))
+  assert.False(t, isacti.IsActive([]interface{} { "abc", "123" }, []interface{} { "def", "456" }))
+  // pre-defined tags are overridden by values of environment variables
+  assert.True(t, isacti.IsActive("tag-1"))
+  assert.True(t, isacti.IsActive("abc", "tag-1"))
+  assert.True(t, isacti.IsActive("disabled", "tag-1"))
+  assert.True(t, isacti.IsActive("tag-4"))
+  assert.False(t, isacti.IsActive("tag-2"))
+  assert.False(t, isacti.IsActive("tag-3"))
+  assert.False(t, isacti.IsActive([]interface{} { nil, "tag-1" }))
+  assert.False(t, isacti.IsActive([]interface{} { "nil", "tag-1" }))
+  assert.False(t, isacti.IsActive("nil", "tag-3"))
+  assert.False(t, isacti.IsActive("tag-3", "disabled"))
 }

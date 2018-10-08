@@ -126,6 +126,121 @@ func (c *codetags) Register(descriptors []interface{}) *codetags {
   return c
 }
 
+func (c *codetags) IsActive(tagexps ...interface{}) bool {
+  return c.isArgumentsSatisfied(tagexps)
+}
+
+func (c *codetags) isArgumentsSatisfied(tagexps []interface{}) bool {
+  for _, tagexp := range tagexps {
+    if c.evaluateExpression(tagexp) {
+      return true
+    }
+  }
+  return false
+}
+
+func (c *codetags) isAllOfLabelsSatisfied(tagexp interface{}) bool {
+  if reflect.TypeOf(tagexp).Kind().String() == "slice" {
+    tagexps := tagexp.([]interface{})
+    for _, tagexp := range tagexps {
+      if !c.evaluateExpression(tagexp) {
+        return false
+      }
+    }
+    return true
+  }
+  return c.evaluateExpression(tagexp)
+}
+
+func (c *codetags) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
+  if reflect.TypeOf(tagexp).Kind().String() == "slice" {
+    tagexps := tagexp.([]interface{})
+    for _, tagexp := range tagexps {
+      if c.evaluateExpression(tagexp) {
+        return true
+      }
+    }
+    return false
+  }
+  return c.evaluateExpression(tagexp)
+}
+
+func (c *codetags) isNotOfLabelsSatisfied(tagexp interface{}) bool {
+  return !c.evaluateExpression(tagexp);
+}
+
+func (c *codetags) evaluateExpression(tagexp interface{}) bool {
+  if tagexp == nil {
+    return false
+  }
+  expType := reflect.TypeOf(tagexp)
+  expTypeKind := expType.Kind().String()
+  // fmt.Printf(" + Type(%s) - Kind: |%s|\n", expTypeString, expTypeKind)
+  // type: string
+  if expTypeKind == "string" {
+    expVal := tagexp.(string)
+    return c.checkLabelActivated(expVal)
+  }
+  // type: array of anythings
+  if expTypeKind == "slice" {
+    expElem := expType.Elem()
+    expElemKind := expElem.Kind().String()
+    if expElemKind == "string" {
+      tags := tagexp.([]string)
+      for _, tag := range tags {
+        if !c.checkLabelActivated(tag) {
+          return false
+        }
+      }
+      return true
+    }
+    if expElemKind == "interface" {
+      return c.isAllOfLabelsSatisfied(tagexp)
+    }
+    return false
+  }
+  // type: map of anythings
+  if expTypeKind == "map" {
+    expElem := expType.Elem()
+    expElemKind := expElem.Kind().String()
+    if (expElemKind == "interface") {
+      subexps := tagexp.(map[string]interface{})
+      for op, subexp := range subexps {
+        switch (op) {
+        case "$not":
+          return c.isNotOfLabelsSatisfied(subexp)
+        case "$all":
+          return c.isAllOfLabelsSatisfied(subexp)
+        case "$any":
+          return c.isAnyOfLabelsSatisfied(subexp)
+        default:
+          return false
+        }
+      }
+    }
+  }
+  // type: unknown
+  return false
+}
+
+func (c *codetags) checkLabelActivated(label string) bool {
+  if cachedVal, ok := c.store.cachedTags[label]; ok {
+    return cachedVal
+  }
+  c.store.cachedTags[label] = c.forceCheckLabelActivated(label)
+  return c.store.cachedTags[label]
+}
+
+func (c *codetags) forceCheckLabelActivated(label string) bool {
+  if list_contains(c.store.excludedTags, label) {
+    return false
+  }
+  if list_contains(c.store.includedTags, label) {
+    return true
+  }
+  return list_contains(c.store.declaredTags, label)
+}
+
 func (c *codetags) GetDeclaredTags() []string {
   return list_clone(c.store.declaredTags)
 }
@@ -136,6 +251,15 @@ func (c *codetags) GetExcludedTags() []string {
 
 func (c *codetags) GetIncludedTags() []string {
   return list_clone(c.store.includedTags)
+}
+
+func (c *codetags) Reset() *codetags {
+  c.ClearCache()
+  c.store.declaredTags = c.store.declaredTags[:0]
+  for k := range c.presets {
+    delete(c.presets, k)
+  }
+  return c
 }
 
 func (c *codetags) ClearCache() *codetags {
