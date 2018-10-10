@@ -1,7 +1,6 @@
 package codetags
 
 import (
-  "fmt"
   "os"
   "strings"
   "reflect"
@@ -120,9 +119,6 @@ func (c *codetags) Register(descriptors []interface{}) *codetags {
       c.store.declaredTags = append(c.store.declaredTags, tag)
     }
   }
-  if conlog {
-    fmt.Printf("Register() is invoked: %v.\n", c.store.declaredTags)
-  }
   return c
 }
 
@@ -140,25 +136,53 @@ func (c *codetags) isArgumentsSatisfied(tagexps []interface{}) bool {
 }
 
 func (c *codetags) isAllOfLabelsSatisfied(tagexp interface{}) bool {
-  if reflect.TypeOf(tagexp).Kind().String() == "slice" {
-    tagexps := tagexp.([]interface{})
-    for _, tagexp := range tagexps {
-      if !c.evaluateExpression(tagexp) {
-        return false
+  expType := reflect.TypeOf(tagexp)
+  if expType.Kind().String() == "slice" {
+    expElemKind := expType.Elem().Kind().String()
+    if expElemKind == "string" {
+      subexps := tagexp.([]string)
+      for _, subexp := range subexps {
+        if !c.checkLabelActivated(subexp) {
+          return false
+        }
       }
+      return true
     }
-    return true
+    if expElemKind == "interface" {
+      subexps := tagexp.([]interface{})
+      for _, subexp := range subexps {
+        if !c.evaluateExpression(subexp) {
+          return false
+        }
+      }
+      return true
+    }
+    return false
   }
   return c.evaluateExpression(tagexp)
 }
 
 func (c *codetags) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
-  if reflect.TypeOf(tagexp).Kind().String() == "slice" {
-    tagexps := tagexp.([]interface{})
-    for _, tagexp := range tagexps {
-      if c.evaluateExpression(tagexp) {
-        return true
+  expType := reflect.TypeOf(tagexp)
+  if expType.Kind().String() == "slice" {
+    expElemKind := expType.Elem().Kind().String()
+    if expElemKind == "string" {
+      subexps := tagexp.([]string)
+      for _, subexp := range subexps {
+        if c.checkLabelActivated(subexp) {
+          return true
+        }
       }
+      return false
+    }
+    if expElemKind == "interface" {
+      subexps := tagexp.([]interface{})
+      for _, subexp := range subexps {
+        if c.evaluateExpression(subexp) {
+          return true
+        }
+      }
+      return false
     }
     return false
   }
@@ -166,7 +190,7 @@ func (c *codetags) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
 }
 
 func (c *codetags) isNotOfLabelsSatisfied(tagexp interface{}) bool {
-  return !c.evaluateExpression(tagexp);
+  return !c.evaluateExpression(tagexp)
 }
 
 func (c *codetags) evaluateExpression(tagexp interface{}) bool {
@@ -175,29 +199,13 @@ func (c *codetags) evaluateExpression(tagexp interface{}) bool {
   }
   expType := reflect.TypeOf(tagexp)
   expTypeKind := expType.Kind().String()
-  // fmt.Printf(" + Type(%s) - Kind: |%s|\n", expTypeString, expTypeKind)
   // type: string
   if expTypeKind == "string" {
-    expVal := tagexp.(string)
-    return c.checkLabelActivated(expVal)
+    return c.checkLabelActivated(tagexp.(string))
   }
   // type: array of anythings
   if expTypeKind == "slice" {
-    expElem := expType.Elem()
-    expElemKind := expElem.Kind().String()
-    if expElemKind == "string" {
-      tags := tagexp.([]string)
-      for _, tag := range tags {
-        if !c.checkLabelActivated(tag) {
-          return false
-        }
-      }
-      return true
-    }
-    if expElemKind == "interface" {
-      return c.isAllOfLabelsSatisfied(tagexp)
-    }
-    return false
+    return c.isAllOfLabelsSatisfied(tagexp)
   }
   // type: map of anythings
   if expTypeKind == "map" {
@@ -208,15 +216,22 @@ func (c *codetags) evaluateExpression(tagexp interface{}) bool {
       for op, subexp := range subexps {
         switch (op) {
         case "$not":
-          return c.isNotOfLabelsSatisfied(subexp)
+          if !c.isNotOfLabelsSatisfied(subexp) {
+            return false
+          }
         case "$all":
-          return c.isAllOfLabelsSatisfied(subexp)
+          if !c.isAllOfLabelsSatisfied(subexp) {
+            return false
+          }
         case "$any":
-          return c.isAnyOfLabelsSatisfied(subexp)
+          if !c.isAnyOfLabelsSatisfied(subexp) {
+            return false
+          }
         default:
           return false
         }
       }
+      return true
     }
   }
   // type: unknown

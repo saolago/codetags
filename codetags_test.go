@@ -131,12 +131,27 @@ func Test_evaluateExpression(t *testing.T) {
   assert.True(t, isacti.evaluateExpression(map[string]interface{} {
     "$all": []interface{} { "abc", "xyz" },
     "$not": "not-found",
-    "$any": map[string]interface{} {
-      "$not": "tag-1",
-      "$all": []interface{} {
-        "tag-2", "tag-4",
-      },
+    "$any": []interface{} { "tag-0", "tag-4" },
+  }))
+  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
+    "$all": []string { "abc", "xyz" },
+    "$not": "not-found",
+    "$any": []string { "tag-0", "tag-4" },
+  }))
+  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
+    "$not": "tag-0",
+    "$all": []interface{} {
+      "tag-1", "tag-4",
     },
+  }))
+  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
+    "$all": []interface{} { "abc", "xyz", map[string]interface{} {
+      "$not": "tag-0",
+      "$all": []interface{} {
+        "tag-1", "tag-4",
+      },
+    }},
+    "$not": "not-found",
   }))
   assert.False(t, isacti.evaluateExpression(nil))
   assert.False(t, isacti.evaluateExpression("nil"))
