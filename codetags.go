@@ -1,6 +1,8 @@
 package codetags
 
 import (
+  "errors"
+  "fmt"
   "os"
   "strings"
   "reflect"
@@ -331,9 +333,46 @@ func (c *codetags) getLabel(tagType string) string {
   return label
 }
 
-var instances map[string]codetags = make(map[string]codetags)
+var instances map[string]*codetags = make(map[string]*codetags)
+
+func Default() (*codetags) {
+  i, _ := GetInstance(DEFAULT_NAMESPACE)
+  return i
+}
+
+func GetInstance(name string, opts ...*Presets) (*codetags, error) {
+  name = labelify(name)
+  if instance, ok := instances[name]; ok {
+    return instance, nil
+  }
+  if len(opts) > 0 {
+    return createInstance(name, opts[0])
+  } else {
+    return createInstance(name, nil)
+  }
+}
 
 func NewInstance(name string, opts ...*Presets) (*codetags, error) {
+  name = labelify(name)
+  if name == DEFAULT_NAMESPACE {
+    if _, ok := instances[name]; ok {
+      return nil, errors.New(
+        fmt.Sprintf("%s is default instance name. Please provides another name.",
+          DEFAULT_NAMESPACE))
+    }
+  }
+  if len(opts) > 0 {
+    return createInstance(name, opts[0])
+  } else {
+    return createInstance(name, nil)
+  }
+}
+
+func createInstance(name string, opts *Presets) (*codetags, error) {
+  if name == "" {
+    return nil, errors.New(
+      "The name of a codetags instance must be not empty")
+  }
   c := &codetags {}
   c.store.env = make(map[string][]string, 0)
   c.store.declaredTags = make([]string, 0)
@@ -341,12 +380,9 @@ func NewInstance(name string, opts ...*Presets) (*codetags, error) {
   c.store.includedTags = make([]string, 0)
   c.store.cachedTags = make(map[string]bool, 0)
   c.presets = make(Presets)
-  if len(opts) > 0 {
-    c.Initialize(opts[0])
-  } else {
-    c.Initialize(nil)
-  }
-  return c, nil
+  c.Initialize(opts)
+  instances[name] = c
+  return instances[name], nil
 }
 
 var not_alphabet = regexp.MustCompile(`\W{1,}`)

@@ -7,7 +7,7 @@ import "reflect"
 import "github.com/stretchr/testify/assert"
 
 func Test_illegal_NewInstance_name(t *testing.T) {
-  t.Skip()
+  Default()
   var table_NewInstance_Names = []string {
     "codetags", "CodeTags", "CODETAGS",
   }
