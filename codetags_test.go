@@ -1,4 +1,4 @@
-package codetags
+package codetags_test
 
 import "fmt"
 import "os"
@@ -6,8 +6,7 @@ import "testing"
 import "reflect"
 import "github.com/stretchr/testify/assert"
 
-func Test_illegal_NewInstance_name(t *testing.T) {
-  Default()
+func TestNewInstance_illegal_name(t *testing.T) {
   var table_NewInstance_Names = []string {
     "codetags", "CodeTags", "CODETAGS",
   }
@@ -19,25 +18,7 @@ func Test_illegal_NewInstance_name(t *testing.T) {
   }
 }
 
-func Test_labelify(t *testing.T) {
-  var table_labelify_cases = []struct {
-    label string
-    expected string
-  }{
-    { label: "", expected: "" },
-    { label: "Hello  world", expected: "HELLO_WORLD" },
-    { label: "Underscore_with 123", expected: "UNDERSCORE_WITH_123" },
-    { label: "user@example.com", expected: "USER_EXAMPLE_COM" },
-  }
-  for _, c := range table_labelify_cases {
-    actual := labelify(c.label)
-    if actual != c.expected {
-      t.Errorf("labelify(%s): expected %s, actual %s", c.label, c.expected, actual)
-    }
-  }
-}
-
-func Test_Initialize(t *testing.T) {
+func TestInitialize(t *testing.T) {
   var table_Initialize_Cases = []struct {
     current *Presets
     data *Presets
@@ -55,7 +36,7 @@ func Test_Initialize(t *testing.T) {
     if ct_ref != ct {
       t.Errorf("testcase[%d] - output Ref is different with source Ref", i)
     }
-    actual := ct_ref.presets
+    actual := ct_ref.GetPresets()
     diffFields := []string {}
     for _, f := range fieldOf_Initialize_opts_group1 {
       if actual[f] != (*c.expected)[f] {
@@ -76,7 +57,7 @@ func Test_Initialize(t *testing.T) {
   }
 }
 
-func Test_Register(t *testing.T) {
+func TestRegister(t *testing.T) {
   var table_Register_Cases = []struct {
     presets *Presets
     descriptors []interface{}
@@ -114,50 +95,7 @@ func Test_Register(t *testing.T) {
   }
 }
 
-func Test_evaluateExpression(t *testing.T) {
-  os.Setenv("ISACTIVE_INCLUDED_TAGS", "abc, def, xyz, tag-4")
-  os.Setenv("ISACTIVE_EXCLUDED_TAGS", "disabled, tag-2")
-
-  isacti, _ := NewInstance("isacti", &Presets{
-    "namespace": "IsActive",
-  })
-
-  isacti.Register([]interface{} {"tag-1", "tag-2"})
-
-  assert.True(t, isacti.evaluateExpression("abc"))
-  assert.True(t, isacti.evaluateExpression("xyz"))
-  assert.True(t, isacti.evaluateExpression([]string {"abc", "xyz"}))
-  assert.True(t, isacti.evaluateExpression([]interface{} {"abc", "xyz"}))
-  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
-    "$all": []interface{} { "abc", "xyz" },
-    "$not": "not-found",
-    "$any": []interface{} { "tag-0", "tag-4" },
-  }))
-  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
-    "$all": []string { "abc", "xyz" },
-    "$not": "not-found",
-    "$any": []string { "tag-0", "tag-4" },
-  }))
-  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
-    "$not": "tag-0",
-    "$all": []interface{} {
-      "tag-1", "tag-4",
-    },
-  }))
-  assert.True(t, isacti.evaluateExpression(map[string]interface{} {
-    "$all": []interface{} { "abc", "xyz", map[string]interface{} {
-      "$not": "tag-0",
-      "$all": []interface{} {
-        "tag-1", "tag-4",
-      },
-    }},
-    "$not": "not-found",
-  }))
-  assert.False(t, isacti.evaluateExpression(nil))
-  assert.False(t, isacti.evaluateExpression("nil"))
-}
-
-func Test_IsActive(t *testing.T) {
+func TestIsActive(t *testing.T) {
   os.Setenv("ISACTIVE_INCLUDED_TAGS", "abc, def, xyz, tag-4")
   os.Setenv("ISACTIVE_EXCLUDED_TAGS", "disabled, tag-2")
 

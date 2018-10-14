@@ -1,3 +1,6 @@
+// Package codetags is a simple feature toggle utility for Go.
+// Developers could use this package to tag code blocks of a feature to 
+// a declared label and turn on/off that feature by environment variables.
 package codetags
 
 import (
@@ -63,6 +66,7 @@ func (c *codetags) Initialize(opts *Presets) *codetags {
 var name_TagDescriptor string = typeof(TagDescriptor{})
 var name_TagPlan string = typeof(TagPlan{})
 
+// Registers the pre-defined tags
 func (c *codetags) Register(descriptors []interface{}) *codetags {
   defs := list_filter(descriptors, func(descriptor interface{}) bool {
     descriptorType := typeof(descriptor)
@@ -270,6 +274,10 @@ func (c *codetags) GetIncludedTags() []string {
   return list_clone(c.store.includedTags)
 }
 
+func (c *codetags) GetPresets() Presets {
+  return c.presets
+}
+
 func (c *codetags) Reset() *codetags {
   c.ClearCache()
   c.store.declaredTags = c.store.declaredTags[:0]
@@ -334,6 +342,8 @@ func (c *codetags) getLabel(tagType string) string {
 }
 
 var instances map[string]*codetags = make(map[string]*codetags)
+
+var instance *codetags = Default()
 
 func Default() (*codetags) {
   i, _ := GetInstance(DEFAULT_NAMESPACE)
