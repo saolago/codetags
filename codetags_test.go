@@ -5,13 +5,30 @@ import "os"
 import "testing"
 import "reflect"
 import "github.com/stretchr/testify/assert"
+import "github.com/saolago/codetags"
+
+const conlog bool = true
+
+func ExampleDefault() {
+  os.Setenv("CODETAGS_INCLUDED_TAGS", "tag-1,tag-2")
+  os.Setenv("CODETAGS_EXCLUDED_TAGS", "tag-2,tag-3")
+
+  checker := codetags.Default()
+  checker.Reset()
+  
+  fmt.Printf("includedTags: %v\n", checker.GetIncludedTags())
+  fmt.Printf("excludedTags: %v\n", checker.GetExcludedTags())
+  // Output:
+  // includedTags: [tag-1 tag-2]
+  // excludedTags: [tag-2 tag-3]
+}
 
 func TestNewInstance_illegal_name(t *testing.T) {
   var table_NewInstance_Names = []string {
     "codetags", "CodeTags", "CODETAGS",
   }
   for _, name := range table_NewInstance_Names {
-    _, err := NewInstance(name)
+    _, err := codetags.NewInstance(name)
     if err == nil {
       t.Errorf("NewInstance('%s'): must return a non-nil error", name)
     }
@@ -20,30 +37,25 @@ func TestNewInstance_illegal_name(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
   var table_Initialize_Cases = []struct {
-    current *Presets
-    data *Presets
-    expected *Presets
+    current *codetags.Presets
+    data *codetags.Presets
+    expected *codetags.Presets
   }{
     {
-      current: &Presets { "namespace": "ABC" },
-      data: &Presets { "namespace": "xyz", "version": "0.1.2" },
-      expected: &Presets {"namespace": "XYZ", "version": "0.1.2"},
+      current: &codetags.Presets { "namespace": "ABC" },
+      data: &codetags.Presets { "namespace": "xyz", "version": "0.1.2" },
+      expected: &codetags.Presets {"namespace": "XYZ", "version": "0.1.2"},
     },
   }
   for i, c := range table_Initialize_Cases {
-    ct, _ := NewInstance("test", c.current)
+    ct, _ := codetags.NewInstance("test", c.current)
     ct_ref := ct.Initialize(c.data)
     if ct_ref != ct {
       t.Errorf("testcase[%d] - output Ref is different with source Ref", i)
     }
     actual := ct_ref.GetPresets()
     diffFields := []string {}
-    for _, f := range fieldOf_Initialize_opts_group1 {
-      if actual[f] != (*c.expected)[f] {
-        diffFields = append(diffFields, f)
-      }
-    }
-    for _, f := range fieldOf_Initialize_opts_group2 {
+    for _, f := range []string { "namespace", "includedTagsLabel", "excludedTagsLabel", "version" } {
       if actual[f] != (*c.expected)[f] {
         diffFields = append(diffFields, f)
       }
@@ -59,20 +71,20 @@ func TestInitialize(t *testing.T) {
 
 func TestRegister(t *testing.T) {
   var table_Register_Cases = []struct {
-    presets *Presets
+    presets *codetags.Presets
     descriptors []interface{}
     declaredTags []string
   }{
     {
-      presets: &Presets{ "version": "0.1.2" },
+      presets: &codetags.Presets{ "version": "0.1.2" },
       descriptors: []interface{} {
         "tag-1",
-        TagDescriptor{
+        codetags.TagDescriptor{
           Name: "tag-2",
           Enabled: false,
-          Plan: TagPlan{ Enabled: false },
+          Plan: codetags.TagPlan{ Enabled: false },
         },
-        TagDescriptor{
+        codetags.TagDescriptor{
           Name: "tag-3",
         },
       },
@@ -80,7 +92,7 @@ func TestRegister(t *testing.T) {
     },
   }
   for i, c := range table_Register_Cases {
-    ct, _ := NewInstance("test", c.presets)
+    ct, _ := codetags.NewInstance("test", c.presets)
     ct_ref := ct.Register(c.descriptors)
     if ct_ref != ct {
       t.Errorf("testcase[%d] - output Ref is different with source Ref", i)
@@ -99,7 +111,7 @@ func TestIsActive(t *testing.T) {
   os.Setenv("ISACTIVE_INCLUDED_TAGS", "abc, def, xyz, tag-4")
   os.Setenv("ISACTIVE_EXCLUDED_TAGS", "disabled, tag-2")
 
-  isacti, _ := NewInstance("isacti", &Presets{
+  isacti, _ := codetags.NewInstance("isacti", &codetags.Presets{
     "namespace": "IsActive",
   })
 

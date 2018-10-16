@@ -14,7 +14,6 @@ import (
 import "github.com/blang/semver"
 
 const DEFAULT_NAMESPACE string = "CODETAGS"
-const conlog bool = true
 
 type TagDescriptor struct {
   Name string
