@@ -29,8 +29,8 @@ type TagPlan struct {
 
 type Presets = map[string]string
 
-type codetags struct {
-	store struct {
+type TagManager struct {
+  store struct {
     env map[string][]string
     declaredTags []string
     includedTags []string
@@ -46,7 +46,7 @@ var fieldOf_Initialize_opts_group2 = []string {
   "namespace", "includedTagsLabel", "excludedTagsLabel",
 }
 
-func (c *codetags) Initialize(opts *Presets) *codetags {
+func (c *TagManager) Initialize(opts *Presets) *TagManager {
   if opts != nil {
     for _, key := range fieldOf_Initialize_opts_group1 {
       if val, ok := (*opts)[key]; ok {
@@ -66,7 +66,7 @@ var name_TagDescriptor string = typeof(TagDescriptor{})
 var name_TagPlan string = typeof(TagPlan{})
 
 // Registers the pre-defined tags
-func (c *codetags) Register(descriptors []interface{}) *codetags {
+func (c *TagManager) Register(descriptors []interface{}) *TagManager {
   defs := list_filter(descriptors, func(descriptor interface{}) bool {
     descriptorType := typeof(descriptor)
     if descriptorType == "string" {
@@ -127,11 +127,11 @@ func (c *codetags) Register(descriptors []interface{}) *codetags {
   return c
 }
 
-func (c *codetags) IsActive(tagexps ...interface{}) bool {
+func (c *TagManager) IsActive(tagexps ...interface{}) bool {
   return c.isArgumentsSatisfied(tagexps)
 }
 
-func (c *codetags) isArgumentsSatisfied(tagexps []interface{}) bool {
+func (c *TagManager) isArgumentsSatisfied(tagexps []interface{}) bool {
   for _, tagexp := range tagexps {
     if c.evaluateExpression(tagexp) {
       return true
@@ -140,7 +140,7 @@ func (c *codetags) isArgumentsSatisfied(tagexps []interface{}) bool {
   return false
 }
 
-func (c *codetags) isAllOfLabelsSatisfied(tagexp interface{}) bool {
+func (c *TagManager) isAllOfLabelsSatisfied(tagexp interface{}) bool {
   expType := reflect.TypeOf(tagexp)
   if expType.Kind().String() == "slice" {
     expElemKind := expType.Elem().Kind().String()
@@ -167,7 +167,7 @@ func (c *codetags) isAllOfLabelsSatisfied(tagexp interface{}) bool {
   return c.evaluateExpression(tagexp)
 }
 
-func (c *codetags) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
+func (c *TagManager) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
   expType := reflect.TypeOf(tagexp)
   if expType.Kind().String() == "slice" {
     expElemKind := expType.Elem().Kind().String()
@@ -194,11 +194,11 @@ func (c *codetags) isAnyOfLabelsSatisfied(tagexp interface{}) bool {
   return c.evaluateExpression(tagexp)
 }
 
-func (c *codetags) isNotOfLabelsSatisfied(tagexp interface{}) bool {
+func (c *TagManager) isNotOfLabelsSatisfied(tagexp interface{}) bool {
   return !c.evaluateExpression(tagexp)
 }
 
-func (c *codetags) evaluateExpression(tagexp interface{}) bool {
+func (c *TagManager) evaluateExpression(tagexp interface{}) bool {
   if tagexp == nil {
     return false
   }
@@ -243,7 +243,7 @@ func (c *codetags) evaluateExpression(tagexp interface{}) bool {
   return false
 }
 
-func (c *codetags) checkLabelActivated(label string) bool {
+func (c *TagManager) checkLabelActivated(label string) bool {
   if cachedVal, ok := c.store.cachedTags[label]; ok {
     return cachedVal
   }
@@ -251,7 +251,7 @@ func (c *codetags) checkLabelActivated(label string) bool {
   return c.store.cachedTags[label]
 }
 
-func (c *codetags) forceCheckLabelActivated(label string) bool {
+func (c *TagManager) forceCheckLabelActivated(label string) bool {
   if list_contains(c.store.excludedTags, label) {
     return false
   }
@@ -261,23 +261,23 @@ func (c *codetags) forceCheckLabelActivated(label string) bool {
   return list_contains(c.store.declaredTags, label)
 }
 
-func (c *codetags) GetDeclaredTags() []string {
+func (c *TagManager) GetDeclaredTags() []string {
   return list_clone(c.store.declaredTags)
 }
 
-func (c *codetags) GetExcludedTags() []string {
+func (c *TagManager) GetExcludedTags() []string {
   return list_clone(c.store.excludedTags)
 }
 
-func (c *codetags) GetIncludedTags() []string {
+func (c *TagManager) GetIncludedTags() []string {
   return list_clone(c.store.includedTags)
 }
 
-func (c *codetags) GetPresets() Presets {
+func (c *TagManager) GetPresets() Presets {
   return c.presets
 }
 
-func (c *codetags) Reset() *codetags {
+func (c *TagManager) Reset() *TagManager {
   c.ClearCache()
   c.store.declaredTags = c.store.declaredTags[:0]
   for k := range c.presets {
@@ -286,14 +286,14 @@ func (c *codetags) Reset() *codetags {
   return c
 }
 
-func (c *codetags) ClearCache() *codetags {
+func (c *TagManager) ClearCache() *TagManager {
   for k := range c.store.cachedTags {
     delete(c.store.cachedTags, k)
   }
   return c.refreshEnv()
 }
 
-func (c *codetags) refreshEnv() *codetags {
+func (c *TagManager) refreshEnv() *TagManager {
   for k := range c.store.env {
     delete(c.store.env, k)
   }
@@ -302,7 +302,7 @@ func (c *codetags) refreshEnv() *codetags {
   return c
 }
 
-func (c *codetags) getEnv(label string) []string {
+func (c *TagManager) getEnv(label string) []string {
   if tags, ok := c.store.env[label]; ok {
     return tags
   }
@@ -310,7 +310,7 @@ func (c *codetags) getEnv(label string) []string {
   return c.store.env[label]
 }
 
-func (c *codetags) getLabel(tagType string) string {
+func (c *TagManager) getLabel(tagType string) string {
   label := ""
   if namespace, ok := c.presets["namespace"]; ok && len(namespace) > 0 {
     label = namespace + "_"
@@ -340,16 +340,16 @@ func (c *codetags) getLabel(tagType string) string {
   return label
 }
 
-var instances map[string]*codetags = make(map[string]*codetags)
+var instances map[string]*TagManager = make(map[string]*TagManager)
 
-var instance *codetags = Default()
+var instance *TagManager = Default()
 
-func Default() (*codetags) {
+func Default() (*TagManager) {
   i, _ := GetInstance(DEFAULT_NAMESPACE)
   return i
 }
 
-func GetInstance(name string, opts ...*Presets) (*codetags, error) {
+func GetInstance(name string, opts ...*Presets) (*TagManager, error) {
   name = labelify(name)
   if instance, ok := instances[name]; ok {
     return instance, nil
@@ -361,7 +361,7 @@ func GetInstance(name string, opts ...*Presets) (*codetags, error) {
   }
 }
 
-func NewInstance(name string, opts ...*Presets) (*codetags, error) {
+func NewInstance(name string, opts ...*Presets) (*TagManager, error) {
   name = labelify(name)
   if name == DEFAULT_NAMESPACE {
     if _, ok := instances[name]; ok {
@@ -377,12 +377,12 @@ func NewInstance(name string, opts ...*Presets) (*codetags, error) {
   }
 }
 
-func createInstance(name string, opts *Presets) (*codetags, error) {
+func createInstance(name string, opts *Presets) (*TagManager, error) {
   if name == "" {
     return nil, errors.New(
       "The name of a codetags instance must be not empty")
   }
-  c := &codetags {}
+  c := &TagManager {}
   c.store.env = make(map[string][]string, 0)
   c.store.declaredTags = make([]string, 0)
   c.store.excludedTags = make([]string, 0)
