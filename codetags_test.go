@@ -10,14 +10,15 @@ import "github.com/saolago/codetags"
 const conlog bool = true
 
 func ExampleDefault() {
+  tagHandler := codetags.Default()
+
+  // Reload environment variables
   os.Setenv("CODETAGS_INCLUDED_TAGS", "tag-1,tag-2")
   os.Setenv("CODETAGS_EXCLUDED_TAGS", "tag-2,tag-3")
+  tagHandler.Reset()
 
-  checker := codetags.Default()
-  checker.Reset()
-  
-  fmt.Printf("includedTags: %v\n", checker.GetIncludedTags())
-  fmt.Printf("excludedTags: %v\n", checker.GetExcludedTags())
+  fmt.Printf("includedTags: %v\n", tagHandler.GetIncludedTags())
+  fmt.Printf("excludedTags: %v\n", tagHandler.GetExcludedTags())
   // Output:
   // includedTags: [tag-1 tag-2]
   // excludedTags: [tag-2 tag-3]
@@ -67,6 +68,121 @@ func TestInitialize(t *testing.T) {
       fmt.Printf("+> Output: %v \n", diffFields)
     }
   }
+}
+
+func ExampleTagManager_Register_02() {
+  defer func() {
+    if r := recover(); r != nil {
+      fmt.Println(r)
+    }
+  }()
+
+  tagHandler := codetags.Default()
+  tagHandler.Register([]interface{} {
+    "feature-1",
+    codetags.TagDescriptor {
+      Name: "feature-2",
+    },
+    1024,
+    codetags.TagDescriptor {
+      Name: "feature-4",
+      Enabled: true,
+    },
+    true,
+  })
+
+  // Output:
+  // descriptor#2 [1024] has invalid type (int), must be a string or TagDescriptor type
+  // descriptor#4 [true] has invalid type (bool), must be a string or TagDescriptor type
+}
+
+// A simple usage: defined a list of tags that can be turned on/off defaultly by Enabled value.
+func ExampleTagManager_Register_01() {
+  tagHandler := codetags.Default()
+
+  tagHandler.Register([]interface{} {
+    "feature-1",
+    codetags.TagDescriptor {
+      Name: "feature-2",
+    },
+    codetags.TagDescriptor {
+      Name: "feature-3",
+      Enabled: false,
+    },
+    codetags.TagDescriptor {
+      Name: "feature-4",
+      Enabled: true,
+    },
+    codetags.TagDescriptor {
+      Name: "feature-5",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+      },
+    },
+  })
+
+  fmt.Printf("declaredTags: %v", tagHandler.GetDeclaredTags())
+  // Output:
+  // declaredTags: [feature-1 feature-2 feature-4 feature-5]
+}
+
+func ExampleTagManager_Register_03() {
+  tagHandler := codetags.Default()
+
+  tagHandler.Reset()
+  tagHandler.Initialize(&codetags.Presets {
+    "version": "0.1.7",
+  })
+
+  tagHandler.Register([]interface{} {
+    codetags.TagDescriptor {
+      Name: "feature-11",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-12",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+        MinBound: "0.1.2",
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-13",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+        MinBound: "0.1.2",
+        MaxBound: "0.1.6",
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-14",
+      Plan: codetags.TagPlan {
+        Enabled: false,
+        MinBound: "0.1.2",
+        MaxBound: "0.1.6",
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-15",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+        MinBound: "0.1.8",
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-16",
+      Plan: codetags.TagPlan {
+        Enabled: false,
+        MinBound: "0.1.9",
+      },
+    },
+  })
+
+  fmt.Printf("declaredTags: %v", tagHandler.GetDeclaredTags())
+  // Output:
+  // declaredTags: [feature-11 feature-12 feature-14 feature-16]
 }
 
 func TestRegister(t *testing.T) {

@@ -19,6 +19,7 @@ type TagDescriptor struct {
   Name string
   Enabled interface{}
   Plan interface{}
+  Note string
 }
 
 type TagPlan struct {
@@ -40,7 +41,7 @@ type TagManager struct {
   presets Presets
 }
 
-var fieldOf_Initialize_opts_group1 = []string{ "version" }
+var fieldOf_Initialize_opts_group1 = []string { "version" }
 
 var fieldOf_Initialize_opts_group2 = []string {
   "namespace", "includedTagsLabel", "excludedTagsLabel",
@@ -67,7 +68,8 @@ var name_TagPlan string = typeof(TagPlan{})
 
 // Registers the pre-defined tags
 func (c *TagManager) Register(descriptors []interface{}) *TagManager {
-  defs := list_filter(descriptors, func(descriptor interface{}) bool {
+  errs := []string {}
+  defs := list_filter(descriptors, func(descriptor interface{}, idx int) bool {
     descriptorType := typeof(descriptor)
     if descriptorType == "string" {
       return true
@@ -110,9 +112,16 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
       }
       return true
     }
+    errs = append(errs, fmt.Sprintf(
+      "descriptor#%d [%v] has invalid type (%s), must be a string or TagDescriptor type",
+      idx, descriptor, reflect.TypeOf(descriptor).String(),
+    ))
     return false
   })
-  tags := list_map(defs, func (info interface{}) string {
+  if len(errs) > 0 {
+    panic(strings.Join(errs, "\n"))
+  }
+  tags := list_map(defs, func (info interface{}, index int) string {
     if typeof(info) == name_TagDescriptor {
       descriptor := info.(TagDescriptor)
       return descriptor.Name
@@ -417,20 +426,20 @@ func list_contains(vs []string, t string) bool {
   return list_index(vs, t) >= 0
 }
 
-func list_filter(vs []interface{}, f func(interface{}) bool) []interface{} {
+func list_filter(vs []interface{}, f func(interface{}, int) bool) []interface{} {
   vsf := make([]interface{}, 0)
-  for _, v := range vs {
-      if f(v) {
+  for i, v := range vs {
+      if f(v, i) {
           vsf = append(vsf, v)
       }
   }
   return vsf
 }
 
-func list_map(vs []interface{}, f func(interface{}) string) []string {
+func list_map(vs []interface{}, f func(interface{}, int) string) []string {
   vsm := make([]string, len(vs))
   for i, v := range vs {
-      vsm[i] = f(v)
+      vsm[i] = f(v, i)
   }
   return vsm
 }
