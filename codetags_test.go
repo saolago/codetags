@@ -77,7 +77,7 @@ func ExampleTagManager_Register_02() {
     }
   }()
 
-  tagHandler := codetags.Default()
+  tagHandler := codetags.Default().Reset()
   tagHandler.Register([]interface{} {
     "feature-1",
     codetags.TagDescriptor {
@@ -98,7 +98,7 @@ func ExampleTagManager_Register_02() {
 
 // A simple usage: defined a list of tags that can be turned on/off defaultly by Enabled value.
 func ExampleTagManager_Register_01() {
-  tagHandler := codetags.Default()
+  tagHandler := codetags.Default().Reset()
 
   tagHandler.Register([]interface{} {
     "feature-1",
@@ -127,9 +127,8 @@ func ExampleTagManager_Register_01() {
 }
 
 func ExampleTagManager_Register_03() {
-  tagHandler := codetags.Default()
+  tagHandler := codetags.Default().Reset()
 
-  tagHandler.Reset()
   tagHandler.Initialize(&codetags.Presets {
     "version": "0.1.7",
   })
@@ -183,6 +182,59 @@ func ExampleTagManager_Register_03() {
   fmt.Printf("declaredTags: %v", tagHandler.GetDeclaredTags())
   // Output:
   // declaredTags: [feature-11 feature-12 feature-14 feature-16]
+}
+
+func ExampleTagManager_Register_04() {
+  defer func() {
+    if r := recover(); r != nil {
+      fmt.Println(r)
+    }
+  }()
+
+  tagHandler := codetags.Default().Reset()
+
+  tagHandler.Initialize(&codetags.Presets {
+    "version": "0.1.7",
+  })
+
+  tagHandler.Register([]interface{} {
+    "feature-11",
+    codetags.TagDescriptor {
+      Name: "feature-11",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-12",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+        MinBound: "0.1.2",
+      },
+    },
+    codetags.TagDescriptor {
+      Name: "feature-13",
+      Plan: codetags.TagPlan {
+        Enabled: true,
+        MinBound: "0.1.2",
+        MaxBound: "0.1.6",
+      },
+    },
+    "feature-13",
+    codetags.TagDescriptor {
+      Name: "feature-14",
+      Plan: codetags.TagPlan {
+        Enabled: false,
+        MinBound: "0.1.2",
+        MaxBound: "0.1.6",
+      },
+    },
+    "feature-14",
+  })
+
+  // Output:
+  // Tag [feature-11] is declared more than one time
+  // Tag [feature-14] is declared more than one time
 }
 
 func TestRegister(t *testing.T) {

@@ -118,9 +118,6 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
     ))
     return false
   })
-  if len(errs) > 0 {
-    panic(strings.Join(errs, "\n"))
-  }
   tags := list_map(defs, func (info interface{}, index int) string {
     if typeof(info) == name_TagDescriptor {
       descriptor := info.(TagDescriptor)
@@ -131,7 +128,12 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
   for _, tag := range tags {
     if !list_contains(c.store.declaredTags, tag) {
       c.store.declaredTags = append(c.store.declaredTags, tag)
+    } else {
+      errs = append(errs, fmt.Sprintf("Tag [%s] is declared more than one time", tag))
     }
+  }
+  if len(errs) > 0 {
+    panic(strings.Join(errs, "\n"))
   }
   return c
 }
