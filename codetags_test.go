@@ -7,7 +7,9 @@ import "reflect"
 import "github.com/stretchr/testify/assert"
 import "github.com/saolago/codetags"
 
-const conlog bool = true
+func getFirstReturn(manager *codetags.TagManager, err error) *codetags.TagManager {
+  return manager
+}
 
 func ExampleDefault() {
   tagHandler := codetags.Default()
@@ -22,6 +24,46 @@ func ExampleDefault() {
   // Output:
   // includedTags: [tag-1 tag-2]
   // excludedTags: [tag-2 tag-3]
+}
+
+func TestDefault(t *testing.T) {
+  assert.Equal(t, codetags.Default(), getFirstReturn(codetags.GetInstance("CODETAGS")))
+  assert.Equal(t, codetags.Default(), getFirstReturn(codetags.GetInstance("CodeTags")))
+  assert.Equal(t, codetags.Default(), getFirstReturn(codetags.GetInstance("codetags")))
+}
+
+func ExampleNewInstance_01() {
+  os.Setenv("MISSION_INCLUDED_TAGS", "tag-1,tag-2")
+  os.Setenv("MISSION_EXCLUDED_TAGS", "tag-2,tag-3")
+
+  tagHandler, err := codetags.NewInstance("myname", &codetags.Presets{
+    "namespace": "Mission",
+  })
+
+  fmt.Printf("Error: %v\n", err)
+  fmt.Printf("includedTags: %v\n", tagHandler.GetIncludedTags())
+  fmt.Printf("excludedTags: %v\n", tagHandler.GetExcludedTags())
+  // Output:
+  // Error: <nil>
+  // includedTags: [tag-1 tag-2]
+  // excludedTags: [tag-2 tag-3]
+}
+
+func ExampleNewInstance_02() {
+  tagHandler, err := codetags.NewInstance("CODETAGS", &codetags.Presets{
+    "namespace": "Mission",
+  })
+  fmt.Printf("Handler: %v, Error: %v\n", tagHandler, err)
+  // Output:
+  // Handler: <nil>, Error: CODETAGS is default instance name. Please provides another name.
+}
+
+func TestNewInstance_invalid_name(t *testing.T) {
+  name := ""
+  _, err := codetags.NewInstance(name)
+  if err == nil {
+    t.Errorf("NewInstance('%s'): must return a non-nil error", name)
+  }
 }
 
 func TestNewInstance_illegal_name(t *testing.T) {
@@ -63,9 +105,6 @@ func TestInitialize(t *testing.T) {
     }
     if len(diffFields) > 0 {
       t.Errorf("testcase[%d] - different fields: %v", i, diffFields)
-    }
-    if conlog {
-      fmt.Printf("+> Output: %v \n", diffFields)
     }
   }
 }
@@ -268,9 +307,6 @@ func TestRegister(t *testing.T) {
     actual := ct.GetDeclaredTags()
     if !reflect.DeepEqual(actual, c.declaredTags) {
       t.Errorf("testcase[%d] - actual[%v] is different with expected [%v]", i, actual, c.declaredTags)
-    }
-    if conlog {
-      fmt.Printf("+> Input data: %v \n", c)
     }
   }
 }

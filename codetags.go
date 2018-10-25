@@ -13,6 +13,7 @@ import (
 )
 import "github.com/blang/semver"
 
+// Namespace of codetags is used as prefix of environment variables.
 const DEFAULT_NAMESPACE string = "CODETAGS"
 
 type TagDescriptor struct {
