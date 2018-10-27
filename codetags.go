@@ -322,14 +322,14 @@ func (c *TagManager) getEnv(label string) []string {
   return c.store.env[label]
 }
 
-func (c *TagManager) getLabel(tagType string) string {
+func (c *TagManager) getLabel(keyword string) string {
   label := ""
   if namespace, ok := c.presets["namespace"]; ok && len(namespace) > 0 {
     label = namespace + "_"
   } else {
     label = DEFAULT_NAMESPACE + "_"
   }
-  switch (tagType) {
+  switch (keyword) {
   case "excludedTags":
     if tagLabel, ok := c.presets["excludedTagsLabel"]; ok && len(tagLabel) > 0 {
       label = label + tagLabel
@@ -343,10 +343,10 @@ func (c *TagManager) getLabel(tagType string) string {
       label = label + "INCLUDED_TAGS"
     }
   default:
-    if tagLabel, ok := c.presets[tagType]; ok && len(tagLabel) > 0 {
+    if tagLabel, ok := c.presets[keyword]; ok && len(tagLabel) > 0 {
       label = label + tagLabel
     } else {
-      label = label + labelify(tagType)
+      label = label + labelify(keyword)
     }
   }
   return label

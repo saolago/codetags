@@ -1,4 +1,4 @@
 # codetags
 
-> A simple golang module for feature toggle.
+> A simple Go module for feature toggle.
 
