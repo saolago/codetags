@@ -1,4 +1,4 @@
-# codetags [![GoDoc](https://godoc.org/github.com/saolago/codetags?status.svg)](https://godoc.org/github.com/saolago/codetags) [![Coverage Status](https://img.shields.io/coveralls/saolago/codetags.svg)](https://coveralls.io/r/saolago/codetags?branch=master)
+# codetags [![GoDoc](https://godoc.org/github.com/saolago/codetags?status.svg)](https://godoc.org/github.com/saolago/codetags) [![Go Report Card](https://goreportcard.com/badge/github.com/saolago/codetags)](https://goreportcard.com/report/github.com/saolago/codetags)
 
 > A simple Go module for feature toggle.
 

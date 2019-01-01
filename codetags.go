@@ -13,7 +13,7 @@ import (
 )
 import "github.com/blang/semver"
 
-// Namespace of codetags is used as prefix of environment variables.
+// DEFAULT_NAMESPACE is used as default prefix of environment variables.
 const DEFAULT_NAMESPACE string = "CODETAGS"
 
 type TagDescriptor struct {
@@ -64,7 +64,7 @@ var nameOfTagPlan string = typeof(TagPlan{})
 // Register is used to declare the pre-defined tags
 func (c *TagManager) Register(descriptors []interface{}) *TagManager {
 	errs := []string{}
-	defs := list_filter(descriptors, func(descriptor interface{}, idx int) bool {
+	defs := listFilter(descriptors, func(descriptor interface{}, idx int) bool {
 		descriptorType := typeof(descriptor)
 		if descriptorType == "string" {
 			return true
@@ -113,7 +113,7 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
 		))
 		return false
 	})
-	tags := list_map(defs, func(info interface{}, index int) string {
+	tags := listMap(defs, func(info interface{}, index int) string {
 		if typeof(info) == nameOfTagDescriptor {
 			descriptor := info.(TagDescriptor)
 			return descriptor.Name
@@ -121,7 +121,7 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
 		return info.(string)
 	})
 	for _, tag := range tags {
-		if !list_contains(c.store.declaredTags, tag) {
+		if !listContains(c.store.declaredTags, tag) {
 			c.store.declaredTags = append(c.store.declaredTags, tag)
 		} else {
 			errs = append(errs, fmt.Sprintf("Tag [%s] is declared more than one time", tag))
@@ -258,25 +258,25 @@ func (c *TagManager) checkLabelActivated(label string) bool {
 }
 
 func (c *TagManager) forceCheckLabelActivated(label string) bool {
-	if list_contains(c.store.excludedTags, label) {
+	if listContains(c.store.excludedTags, label) {
 		return false
 	}
-	if list_contains(c.store.includedTags, label) {
+	if listContains(c.store.includedTags, label) {
 		return true
 	}
-	return list_contains(c.store.declaredTags, label)
+	return listContains(c.store.declaredTags, label)
 }
 
 func (c *TagManager) GetDeclaredTags() []string {
-	return list_clone(c.store.declaredTags)
+	return listClone(c.store.declaredTags)
 }
 
 func (c *TagManager) GetExcludedTags() []string {
-	return list_clone(c.store.excludedTags)
+	return listClone(c.store.excludedTags)
 }
 
 func (c *TagManager) GetIncludedTags() []string {
-	return list_clone(c.store.includedTags)
+	return listClone(c.store.includedTags)
 }
 
 func (c *TagManager) GetPresets() Presets {
@@ -325,30 +325,29 @@ func (c *TagManager) getLabel(keyword string) string {
 	}
 	if keyword == "namespace" {
 		return label
-	} else {
-		label = label + "_"
-		switch keyword {
-		case "excludedTags":
-			if tagLabel, ok := c.presets["EXCLUDED_TAGS"]; ok && len(tagLabel) > 0 {
-				label = label + tagLabel
-			} else {
-				label = label + "EXCLUDED_TAGS"
-			}
-		case "includedTags":
-			if tagLabel, ok := c.presets["INCLUDED_TAGS"]; ok && len(tagLabel) > 0 {
-				label = label + tagLabel
-			} else {
-				label = label + "INCLUDED_TAGS"
-			}
-		default:
-			if tagLabel, ok := c.presets[keyword]; ok && len(tagLabel) > 0 {
-				label = label + tagLabel
-			} else {
-				label = label + labelify(keyword)
-			}
-		}
-		return label
 	}
+	label = label + "_"
+	switch keyword {
+	case "excludedTags":
+		if tagLabel, ok := c.presets["EXCLUDED_TAGS"]; ok && len(tagLabel) > 0 {
+			label = label + tagLabel
+		} else {
+			label = label + "EXCLUDED_TAGS"
+		}
+	case "includedTags":
+		if tagLabel, ok := c.presets["INCLUDED_TAGS"]; ok && len(tagLabel) > 0 {
+			label = label + tagLabel
+		} else {
+			label = label + "INCLUDED_TAGS"
+		}
+	default:
+		if tagLabel, ok := c.presets[keyword]; ok && len(tagLabel) > 0 {
+			label = label + tagLabel
+		} else {
+			label = label + labelify(keyword)
+		}
+	}
+	return label
 }
 
 var instances map[string]*TagManager = make(map[string]*TagManager)
@@ -383,9 +382,8 @@ func NewInstance(name string, opts ...*Presets) (*TagManager, error) {
 	}
 	if len(opts) > 0 {
 		return createInstance(name, opts[0])
-	} else {
-		return createInstance(name, nil)
 	}
+	return createInstance(name, nil)
 }
 
 func createInstance(name string, opts *Presets) (*TagManager, error) {
@@ -405,17 +403,17 @@ func createInstance(name string, opts *Presets) (*TagManager, error) {
 	return instances[name], nil
 }
 
-var not_alphabet = regexp.MustCompile(`\W{1,}`)
+var nonWords = regexp.MustCompile(`\W{1,}`)
 
 func labelify(label string) string {
-	return strings.ToUpper(not_alphabet.ReplaceAllString(strings.Trim(label, ` `), `_`))
+	return strings.ToUpper(nonWords.ReplaceAllString(strings.Trim(label, ` `), `_`))
 }
 
 func typeof(v interface{}) string {
 	return reflect.TypeOf(v).String()
 }
 
-func list_index(vs []string, t string) int {
+func listIndex(vs []string, t string) int {
 	for i, v := range vs {
 		if v == t {
 			return i
@@ -424,11 +422,11 @@ func list_index(vs []string, t string) int {
 	return -1
 }
 
-func list_contains(vs []string, t string) bool {
-	return list_index(vs, t) >= 0
+func listContains(vs []string, t string) bool {
+	return listIndex(vs, t) >= 0
 }
 
-func list_filter(vs []interface{}, f func(interface{}, int) bool) []interface{} {
+func listFilter(vs []interface{}, f func(interface{}, int) bool) []interface{} {
 	vsf := make([]interface{}, 0)
 	for i, v := range vs {
 		if f(v, i) {
@@ -438,7 +436,7 @@ func list_filter(vs []interface{}, f func(interface{}, int) bool) []interface{} 
 	return vsf
 }
 
-func list_map(vs []interface{}, f func(interface{}, int) string) []string {
+func listMap(vs []interface{}, f func(interface{}, int) string) []string {
 	vsm := make([]string, len(vs))
 	for i, v := range vs {
 		vsm[i] = f(v, i)
@@ -446,7 +444,7 @@ func list_map(vs []interface{}, f func(interface{}, int) string) []string {
 	return vsm
 }
 
-func list_clone(ss []string) []string {
+func listClone(ss []string) []string {
 	if ss == nil {
 		return make([]string, 0)
 	}
