@@ -4,7 +4,6 @@
 package codetags
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -92,12 +91,11 @@ func (c *TagManager) Register(descriptors []interface{}) *TagManager {
 						if validated {
 							if satisfied {
 								return plan.Enabled.(bool)
-							} else {
-								if info.Enabled != nil && typeof(info.Enabled) == "bool" {
-									return info.Enabled.(bool)
-								}
-								return !plan.Enabled.(bool)
 							}
+							if info.Enabled != nil && typeof(info.Enabled) == "bool" {
+								return info.Enabled.(bool)
+							}
+							return !plan.Enabled.(bool)
 						}
 					}
 				}
@@ -366,18 +364,17 @@ func GetInstance(name string, opts ...*Presets) (*TagManager, error) {
 	}
 	if len(opts) > 0 {
 		return createInstance(name, opts[0])
-	} else {
-		return createInstance(name, nil)
 	}
+	return createInstance(name, nil)
 }
 
 func NewInstance(name string, opts ...*Presets) (*TagManager, error) {
 	name = labelify(name)
 	if name == DEFAULT_NAMESPACE {
 		if _, ok := instances[name]; ok {
-			return nil, errors.New(
-				fmt.Sprintf("%s is default instance name. Please provides another name.",
-					DEFAULT_NAMESPACE))
+			return nil, fmt.Errorf(
+				"%s is default instance name. Please provides another name.",
+				DEFAULT_NAMESPACE)
 		}
 	}
 	if len(opts) > 0 {
@@ -388,7 +385,7 @@ func NewInstance(name string, opts ...*Presets) (*TagManager, error) {
 
 func createInstance(name string, opts *Presets) (*TagManager, error) {
 	if name == "" {
-		return nil, errors.New(
+		return nil, fmt.Errorf(
 			"The name of a codetags instance must be not empty")
 	}
 	c := &TagManager{}
