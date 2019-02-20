@@ -278,7 +278,11 @@ func (c *TagManager) GetIncludedTags() []string {
 }
 
 func (c *TagManager) GetPresets() Presets {
-	return c.presets
+	cloned := Presets{}
+	for k, v := range c.presets {
+		cloned[k] = v
+	}
+	return cloned
 }
 
 func (c *TagManager) Reset() *TagManager {

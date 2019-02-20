@@ -45,6 +45,33 @@ func ExampleNewInstance_duplicatedName() {
 	// Handler: <nil>, Error: CODETAGS is default instance name. Please provides another name.
 }
 
+func ExampleTagManager_Initialize() {
+	os.Setenv("CODETAGS_INCLUDED_TAGS", "tag-1,tag-2")
+	os.Setenv("CODETAGS_EXCLUDED_TAGS", "tag-2,tag-3")
+	os.Setenv("PASSION_INCLUDED_TAGS", "tag-4,tag-5")
+	os.Setenv("PASSION_NEGATIVE_TAGS", "tag-5,tag-6")
+	os.Setenv("PASSION_EXCLUDED_TAGS", "tag-6,tag-7")
+
+	tagHandler := codetags.Default().Reset()
+
+	tagHandler.Initialize(&codetags.Presets{
+		"namespace": "Passion",
+		"EXCLUDED_TAGS": "NEGATIVE_TAGS",
+		"version": "1.2.3",
+	})
+
+	presets := tagHandler.GetPresets()
+	fmt.Printf("Presets[namespace]: %s\n", presets["namespace"])
+	fmt.Printf("Presets[version]: %s\n", presets["version"])
+	fmt.Printf("includedTags: %v\n", tagHandler.GetIncludedTags())
+	fmt.Printf("excludedTags: %v\n", tagHandler.GetExcludedTags())
+	// Output:
+	// Presets[namespace]: PASSION
+	// Presets[version]: 1.2.3
+	// includedTags: [tag-4 tag-5]
+	// excludedTags: [tag-5 tag-6]
+}
+
 func ExampleTagManager_Register_invalidDescriptorType() {
 	defer func() {
 		if r := recover(); r != nil {
